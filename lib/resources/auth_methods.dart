@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:instagram_flutter/models/user.dart' as model;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:instagram_flutter/resources/storage_methods.dart';
 
@@ -30,60 +31,59 @@ class AuthMethods {
 
         print(cred.user!.uid);
 
-        String url = await StorageMethods().uploadImageToStorage('profilePics', file, false);
+        String url = await StorageMethods()
+            .uploadImageToStorage('profilePics', file, false);
 
-        await _fireStore.collection('users').doc(cred.user!.uid).set({
-          'username': username,
-          'uid': cred.user!.uid,
-          'email': email,
-          'bio': bio,
-          'followers': [],
-          'following': [],
-          'photoUrl' : url,
-        });
+        model.User user = model.User(
+            username: username,
+            uid: cred.user!.uid,
+            email: email,
+            bio: bio,
+            photoUrl: url,
+            followers: [],
+            following: []);
+
+        await _fireStore
+            .collection('users')
+            .doc(cred.user!.uid)
+            .set(user.toJson());
 
         res = "success";
-      } 
-    } on FirebaseAuthException catch(ex){
-      if (ex.code == 'invalid-email'){
+      }
+    } on FirebaseAuthException catch (ex) {
+      if (ex.code == 'invalid-email') {
         res = 'The email is badly formatted';
       }
-      if (ex.code == 'weak-password'){
+      if (ex.code == 'weak-password') {
         res = 'The password should be at least 6 characters';
       }
-    }
-    
-    catch (error) {
+    } catch (error) {
       res = error.toString();
     }
 
     return res;
   }
 
-  Future<String> loginUser({
-    required String email,
-    required String password
-  }) async {
+  Future<String> loginUser(
+      {required String email, required String password}) async {
     String res = 'Some error occured';
 
     try {
-        if (email.isNotEmpty || password.isNotEmpty){
-          await _auth.signInWithEmailAndPassword(email: email, password: password);
-          res = 'success';
-        }
-        else{
-          res = 'Please enter all the fields';
-        }
-    }
-    on FirebaseAuthException catch (ex){
-      if (ex.code == 'user-not-found'){
+      if (email.isNotEmpty || password.isNotEmpty) {
+        await _auth.signInWithEmailAndPassword(
+            email: email, password: password);
+        res = 'success';
+      } else {
+        res = 'Please enter all the fields';
+      }
+    } on FirebaseAuthException catch (ex) {
+      if (ex.code == 'user-not-found') {
         res = 'Please register first';
       }
-      if (ex.code == 'wrong-password'){
+      if (ex.code == 'wrong-password') {
         res = 'The password is incorrect';
       }
-    }
-    catch (ex){
+    } catch (ex) {
       res = ex.toString();
     }
 
